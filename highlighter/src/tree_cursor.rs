@@ -77,6 +77,25 @@ impl<'tree> TreeCursor<'tree> {
         self.cursor.goto_first_child()
     }
 
+    pub fn goto_last_child(&mut self) -> bool {
+        let range = self.cursor.node().byte_range();
+        let layer = self.syntax.layer(self.current);
+        if let Some((layer, tree)) = layer
+            .injection_at_byte_idx(range.end)
+            .filter(|injection| injection.range.end >= range.end)
+            .and_then(|injection| {
+                Some((injection.layer, self.syntax.layer(injection.layer).tree()?))
+            })
+        {
+            // Switch to the child layer.
+            self.current = layer;
+            self.cursor = tree.walk();
+            return true;
+        }
+
+        self.cursor.goto_last_child()
+    }
+
     pub fn goto_next_sibling(&mut self) -> bool {
         self.cursor.goto_next_sibling()
     }
